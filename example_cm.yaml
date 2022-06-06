@@ -1,0 +1,28 @@
+- modulename: test1
+  configuration:  
+    foo: bar
+    spamm: eggs
+    test1: test2
+  template:
+    spec:
+      containers:
+        - name: test-job
+          image: busybox
+          command:
+            - sleep
+            - "100"
+      restartpolicy: OnFailure
+- modulename: test2
+  configuration:
+    bar: foo
+    eggs: spamm
+    test2: test1
+  template:
+    spec:
+      containers:
+        - name: test-job
+          image: busybox
+          command:
+            - sleep
+            - "150"
+      restartpolicy: OnFailure
