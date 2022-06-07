@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"os"
-
+	"strconv"
 	scenarioconfig "github.com/randsw/cascadescenariocontroller/cascadescenario"
 	"github.com/randsw/cascadescenariocontroller/logger"
 	"go.uber.org/zap"
@@ -23,6 +23,11 @@ const (
 	Succeeded
 	Failed
 )
+
+type s3PackagePath struct {
+	stageNum int
+	path string
+}
 
 func connectToK8s() *kubernetes.Clientset {
 	var kubeconfig string
@@ -49,7 +54,7 @@ func connectToK8s() *kubernetes.Clientset {
 	return clientset
 }
 
-func launchK8sJob(clientset *kubernetes.Clientset, namespace string, config *scenarioconfig.CascadeScenario) {
+func launchK8sJob(clientset *kubernetes.Clientset, namespace string, config *scenarioconfig.CascadeScenario, s3path *s3PackagePath) {
 	jobs := clientset.BatchV1().Jobs(namespace)
 
 	labels := map[string]string{"app": "Cascade", "modulename": config.ModuleName}
@@ -62,6 +67,9 @@ func launchK8sJob(clientset *kubernetes.Clientset, namespace string, config *sce
 	// Fill pod env vars with scenario parameters
 	for key, value := range ScenarioParameters {
 		podEnv = append(podEnv, v1.EnvVar{Name: key, Value: value})
+	}
+	if s3path.stageNum > 0 {
+		podEnv = append(podEnv, v1.EnvVar{Name: "path", Value: s3path.path + "-stage-" + strconv.Itoa(s3path.stageNum + 1)})
 	}
 
 	JobTemplate.Spec.Containers[0].Env = podEnv
@@ -86,7 +94,7 @@ func launchK8sJob(clientset *kubernetes.Clientset, namespace string, config *sce
 	}
 
 	//print job details
-	logger.Zaplog.Info("Created K8s job successfully", zap.String("error", err.Error()))
+	logger.Zaplog.Info("Created K8s job successfully", zap.String("JobName", config.ModuleName))
 }
 
 func getJobStatus(clientset *kubernetes.Clientset, jobName string, jobNamespace string) (JobStatus, error) {
@@ -137,8 +145,16 @@ func main() {
 	if envvar := os.Getenv("POD_NAMESPACE"); len(envvar) > 0 {
 		jobNamespace = envvar
 	}
-	for _, jobConfig := range CascadeScenatioConfig {
-		launchK8sJob(k8sApiClientset, jobNamespace, &jobConfig)
+	// Initialize s3path struct
+	s3PackagePath := new(s3PackagePath)
+	for i, jobConfig := range CascadeScenatioConfig {
+		// First stage. Get path from config
+		if i == 0 {
+			s3PackagePath.path = jobConfig.Configuration["path"]
+		}
+		s3PackagePath.stageNum = i
+		//Start k8s job
+		launchK8sJob(k8sApiClientset, jobNamespace, &jobConfig, s3PackagePath)
 		start := true
 		for {
 			status, err := getJobStatus(k8sApiClientset, jobConfig.ModuleName, jobNamespace)
