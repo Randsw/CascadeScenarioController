@@ -3,7 +3,7 @@
     foo: bar
     spamm: eggs
     test1: test2
-    path: https://my-bucket.s3.us-west-2.amazonaws.com/2a8b1442-e647-11ec-8fea-0242ac120002
+    path: https://my-bucket.s3.us-west-2.amazonaws.com/2a8b1442-e647-11ec-8fea-0242ac120002.tgz
   template:
     spec:
       containers:

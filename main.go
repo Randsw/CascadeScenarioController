@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"strconv"
+	"strings"
 	scenarioconfig "github.com/randsw/cascadescenariocontroller/cascadescenario"
 	"github.com/randsw/cascadescenariocontroller/logger"
 	"go.uber.org/zap"
@@ -27,6 +28,7 @@ const (
 type s3PackagePath struct {
 	stageNum int
 	path string
+	isLastStage bool
 }
 
 func connectToK8s() *kubernetes.Clientset {
@@ -69,9 +71,12 @@ func launchK8sJob(clientset *kubernetes.Clientset, namespace string, config *sce
 		podEnv = append(podEnv, v1.EnvVar{Name: key, Value: value})
 	}
 	if s3path.stageNum > 0 {
-		podEnv = append(podEnv, v1.EnvVar{Name: "path", Value: s3path.path + "-stage-" + strconv.Itoa(s3path.stageNum + 1)})
+		split := strings.Split(s3path.path, ".")
+		podEnv = append(podEnv, v1.EnvVar{Name: "path", Value: split[0] + "-stage-" + strconv.Itoa(s3path.stageNum + 1) + split[1]})
 	}
-
+	if s3path.isLastStage {
+		podEnv = append(podEnv, v1.EnvVar{Name: "finalstage", Value: "true"})
+	}
 	JobTemplate.Spec.Containers[0].Env = podEnv
 
 	jobSpec := &batchv1.Job{
@@ -151,6 +156,9 @@ func main() {
 		// First stage. Get path from config
 		if i == 0 {
 			s3PackagePath.path = jobConfig.Configuration["path"]
+		}
+		if i == len(CascadeScenatioConfig) {
+			s3PackagePath.isLastStage = true
 		}
 		s3PackagePath.stageNum = i
 		//Start k8s job
