@@ -1,13 +1,18 @@
 package cascadescenario
 
 import (
-	corev1 "k8s.io/api/core/v1"
-	"gopkg.in/yaml.v3"
 	"os"
+
 	"github.com/randsw/cascadescenariocontroller/logger"
+	"gopkg.in/yaml.v3"
+	corev1 "k8s.io/api/core/v1"
 )
 
-type CascadeScenario struct {
+type fullscenario struct {
+	Cascademodules []CascadeScenarios `json:"cascademodules"`
+}
+
+type CascadeScenarios struct {
 	// Configuration parameter for Cascade Module
 	// +patchMergeKey=name
 	// +patchStrategy=merge
@@ -43,15 +48,15 @@ type CascadeScenario struct {
 	Template corev1.PodTemplateSpec `json:"template" protobuf:"bytes,6,opt,name=template"`
 }
 
-func ReadConfigYAML (filename string) []CascadeScenario {
-	var Config []CascadeScenario
+func ReadConfigYAML(filename string) []CascadeScenarios {
+	var Config fullscenario
 	yamlFile, err := os.ReadFile(filename)
 	if err != nil {
-    	logger.Zaplog.Error("Cant read config file")
+		logger.Zaplog.Error("Cant read config file")
 	}
 	err = yaml.Unmarshal(yamlFile, &Config)
 	if err != nil {
-    	logger.Zaplog.Error("YAML unmarshal failed")
+		logger.Zaplog.Error("YAML unmarshal failed")
 	}
-	return Config
+	return Config.Cascademodules
 }

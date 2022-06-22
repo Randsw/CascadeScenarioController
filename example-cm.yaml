@@ -1,0 +1,15 @@
+apiVersion: v1
+data:
+  configuration: "- modulename: grayscale\n  configuration:  \n    foo: bar\n    spamm:
+    eggs\n    test1: test2\n    s3path: http://192.168.145.234:9000/incoming/33e65374-ee8e-4da6-a2e7-71a9cc39d222.tgz\n
+    \ template:\n    spec:\n      containers:\n        - name: grayscale\n          image:
+    ghcr.io/randsw/grayscale:0.1.0\n      restartpolicy: OnFailure\n- modulename:
+    binarization\n  configuration:\n    thresh: \"128\"\n    eggs: spamm\n    test2:
+    test1\n  template:\n    spec:\n      containers:\n        - name: binarization\n
+    \         image: ghcr.io/randsw/binarization:0.1.0\n      restartpolicy: OnFailure\n-
+    modulename: diff\n  configuration:\n    bar: foo\n    eggs: spamm\n    test2:
+    test1\n  template:\n    spec:\n      containers:\n        - name: diff\n          image:
+    ghcr.io/randsw/diff:0.1.0\n      restartpolicy: OnFailure\n"
+kind: ConfigMap
+metadata:
+  name: my-config

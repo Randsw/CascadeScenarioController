@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
 	scenarioconfig "github.com/randsw/cascadescenariocontroller/cascadescenario"
 	"github.com/randsw/cascadescenariocontroller/logger"
 	"go.uber.org/zap"
@@ -26,8 +27,8 @@ const (
 )
 
 type s3PackagePath struct {
-	stageNum int
-	path string
+	stageNum    int
+	path        string
 	isLastStage bool
 }
 
@@ -56,7 +57,7 @@ func connectToK8s() *kubernetes.Clientset {
 	return clientset
 }
 
-func launchK8sJob(clientset *kubernetes.Clientset, namespace string, config *scenarioconfig.CascadeScenario, s3path *s3PackagePath) {
+func launchK8sJob(clientset *kubernetes.Clientset, namespace string, config *scenarioconfig.CascadeScenarios, s3path *s3PackagePath) {
 	jobs := clientset.BatchV1().Jobs(namespace)
 
 	labels := map[string]string{"app": "Cascade", "modulename": config.ModuleName}
@@ -71,8 +72,8 @@ func launchK8sJob(clientset *kubernetes.Clientset, namespace string, config *sce
 		podEnv = append(podEnv, v1.EnvVar{Name: key, Value: value})
 	}
 	if s3path.stageNum > 0 {
-		split := strings.Split(s3path.path, ".")
-		podEnv = append(podEnv, v1.EnvVar{Name: "path", Value: split[0] + "-stage-" + strconv.Itoa(s3path.stageNum + 1) + split[1]})
+		split := strings.Split(s3path.path, ".tgz")
+		podEnv = append(podEnv, v1.EnvVar{Name: "s3path", Value: split[0] + "-stage-" + strconv.Itoa(s3path.stageNum) + ".tgz"})
 	}
 	if s3path.isLastStage {
 		podEnv = append(podEnv, v1.EnvVar{Name: "finalstage", Value: "true"})
@@ -136,9 +137,9 @@ func main() {
 	logger.InitLogger()
 
 	//Get Config from file mounted in tmp folder
-	//confgFilename := "/tmp/Configuration"
+	configFilename := "/tmp/configuration"
 
-	configFilename := "example_cm_fail.yaml"
+	//configFilename := "example_cm.yaml"
 
 	CascadeScenatioConfig := scenarioconfig.ReadConfigYAML(configFilename)
 
@@ -155,9 +156,9 @@ func main() {
 	for i, jobConfig := range CascadeScenatioConfig {
 		// First stage. Get path from config
 		if i == 0 {
-			s3PackagePath.path = jobConfig.Configuration["path"]
+			s3PackagePath.path = jobConfig.Configuration["s3path"]
 		}
-		if i == len(CascadeScenatioConfig) {
+		if i == len(CascadeScenatioConfig)-1 {
 			s3PackagePath.isLastStage = true
 		}
 		s3PackagePath.stageNum = i

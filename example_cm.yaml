@@ -1,29 +1,35 @@
-- modulename: test1
-  configuration:  
-    foo: bar
-    spamm: eggs
-    test1: test2
-    path: https://my-bucket.s3.us-west-2.amazonaws.com/2a8b1442-e647-11ec-8fea-0242ac120002.tgz
-  template:
-    spec:
-      containers:
-        - name: test-job
-          image: busybox
-          command:
-            - sleep
-            - "100"
-      restartpolicy: OnFailure
-- modulename: test2
-  configuration:
-    bar: foo
-    eggs: spamm
-    test2: test1
-  template:
-    spec:
-      containers:
-        - name: test-job
-          image: busybox
-          command:
-            - sleep
-            - "150"
-      restartpolicy: OnFailure
+cascademodules:
+  - modulename: grayscale
+    configuration:  
+      foo: bar
+      spamm: eggs
+      test1: test2
+      s3path: http://192.168.188.44:9000/incoming/33e65374-ee8e-4da6-a2e7-71a9cc39d222.tgz
+    template:
+      spec:
+        containers:
+          - name: grayscale
+            image: ghcr.io/randsw/grayscale:0.1.0
+        restartpolicy: OnFailure
+  - modulename: binarization
+    configuration:
+      thresh: "128"
+      eggs: spamm
+      test2: test1
+    template:
+      spec:
+        containers:
+          - name: binarization
+            image: ghcr.io/randsw/binarization:0.1.0
+        restartpolicy: OnFailure
+  - modulename: diff
+    configuration:
+      bar: foo
+      eggs: spamm
+      test2: test1
+    template:
+      spec:
+        containers:
+          - name: diff
+            image: ghcr.io/randsw/diff:0.1.0
+        restartpolicy: OnFailure

@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cascadescenario-ip-job
+  namespace: default
+  labels:
+    app: cascadescenario-ip-job
+spec:
+  template:
+    metadata:
+      name: cascadescenario-ip
+      labels:
+        app: cascadescenario-ip
+    spec:
+      serviceAccountName: cascade
+      containers:
+      - name: cascadescenario-ip
+        image: ghcr.io/randsw/cascadescenariocontroller:0.1.0
+        volumeMounts:
+          - name: config-volume
+            mountPath: /tmp
+        env:
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+      volumes:
+        - name: config-volume
+          configMap:
+            name: my-config
+      restartPolicy: OnFailure
