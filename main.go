@@ -141,7 +141,7 @@ func main() {
 
 	//configFilename := "example_cm.yaml"
 
-	CascadeScenatioConfig := scenarioconfig.ReadConfigYAML(configFilename)
+	CascadeScenatioConfig := scenarioconfig.ReadConfigJSON(configFilename)
 
 	//Connect to k8s api server
 	k8sApiClientset := connectToK8s()

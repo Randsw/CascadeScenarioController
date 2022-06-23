@@ -24,3 +24,30 @@ roleRef:
   kind: Role
   name: cascade-role
   apiGroup: rbac.authorization.k8s.io
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: image-process
+  name: cascade-role-ip
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["batch", "extensions"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: cascade-rb-ip
+  namespace: image-process
+subjects:
+  - kind: ServiceAccount
+    name: cascade
+    namespace: image-process
+roleRef:
+  kind: Role
+  name: cascade-role-ip
+  apiGroup: rbac.authorization.k8s.io

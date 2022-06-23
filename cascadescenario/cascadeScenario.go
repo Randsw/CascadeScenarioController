@@ -4,7 +4,8 @@ import (
 	"os"
 
 	"github.com/randsw/cascadescenariocontroller/logger"
-	"gopkg.in/yaml.v3"
+	"encoding/json"
+
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -48,13 +49,13 @@ type CascadeScenarios struct {
 	Template corev1.PodTemplateSpec `json:"template" protobuf:"bytes,6,opt,name=template"`
 }
 
-func ReadConfigYAML(filename string) []CascadeScenarios {
+func ReadConfigJSON(filename string) []CascadeScenarios {
 	var Config fullscenario
-	yamlFile, err := os.ReadFile(filename)
+	jsonFile, err := os.ReadFile(filename)
 	if err != nil {
 		logger.Zaplog.Error("Cant read config file")
 	}
-	err = yaml.Unmarshal(yamlFile, &Config)
+	err = json.Unmarshal(jsonFile, &Config)
 	if err != nil {
 		logger.Zaplog.Error("YAML unmarshal failed")
 	}
