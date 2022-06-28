@@ -8,6 +8,7 @@ import (
 
 	scenarioconfig "github.com/randsw/cascadescenariocontroller/cascadescenario"
 	"github.com/randsw/cascadescenariocontroller/logger"
+	webhook "github.com/randsw/cascadescenariocontroller/webhook"
 	"go.uber.org/zap"
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
@@ -137,20 +138,33 @@ func main() {
 	logger.InitLogger()
 
 	//Get Config from file mounted in tmp folder
-	configFilename := "/tmp/configuration"
+	//configFilename := "/tmp/configuration"
 
-	//configFilename := "example_cm.yaml"
+	configFilename := "example_cm.yaml"
 
 	CascadeScenatioConfig := scenarioconfig.ReadConfigJSON(configFilename)
 
 	//Connect to k8s api server
 	k8sApiClientset := connectToK8s()
-	//Create job
+
 	//Get pod namespace
 	jobNamespace := "default"
 	if envvar := os.Getenv("POD_NAMESPACE"); len(envvar) > 0 {
 		jobNamespace = envvar
 	}
+
+	//Get status server address
+	statusServerAddress := "127.0.0.1:8000"
+	if envvar := os.Getenv("STATUS_SERVER"); len(envvar) > 0 {
+		statusServerAddress = envvar
+	}
+
+	//Get status server address
+	scenarioName := "Test-image-processing"
+	if envvar := os.Getenv("SCENARIO_NAME"); len(envvar) > 0 {
+		scenarioName = envvar
+	}
+
 	// Initialize s3path struct
 	s3PackagePath := new(s3PackagePath)
 	for i, jobConfig := range CascadeScenatioConfig {
@@ -165,27 +179,50 @@ func main() {
 		//Start k8s job
 		launchK8sJob(k8sApiClientset, jobNamespace, &jobConfig, s3PackagePath)
 		start := true
+		//Check for job status
 		for {
 			status, err := getJobStatus(k8sApiClientset, jobConfig.ModuleName, jobNamespace)
 			if err != nil {
 				logger.Zaplog.Error("Get Job status fail", zap.String("JobName", jobConfig.ModuleName), zap.String("error", err.Error()))
 			}
+			// Job starting
 			if status == Running && start {
 				logger.Zaplog.Info("Job started ", zap.String("JobName", jobConfig.ModuleName))
 				start = false
-			} else if status == Succeeded {
-				// Delete finished Job
-				err := deleteSuccessJob(k8sApiClientset, jobConfig.ModuleName, jobNamespace)
+			} else if status == Succeeded { // Job finished succesfuly
+				statusCode, err := webhook.SendWebHook(jobConfig.ModuleName + " in scenario " + scenarioName + " finished successfully", statusServerAddress)
 				if err != nil {
-					logger.Zaplog.Error("Failed to delete succesfull job", zap.String("JobName", jobConfig.ModuleName), zap.String("error", err.Error()))
+					logger.Zaplog.Error("Webhook failed", zap.String("error", err.Error()))
+				}
+				if statusCode != "200" {
+					logger.Zaplog.Error("Webhook return fail code", zap.String("error", err.Error()))
+				}
+				// Delete finished Job
+				err = deleteSuccessJob(k8sApiClientset, jobConfig.ModuleName, jobNamespace)
+				if err != nil {
+					logger.Zaplog.Error("Failed to delete successfull job", zap.String("JobName", jobConfig.ModuleName), zap.String("error", err.Error()))
 				}
 				break
-			} else if status == Failed {
+			} else if status == Failed { // Job failed
+				statusCode, err := webhook.SendWebHook(jobConfig.ModuleName + " in scenario " + scenarioName + " failed", statusServerAddress)
+				if err != nil {
+					logger.Zaplog.Error("Webhook failed", zap.String("error", err.Error()))
+				}
+				if statusCode != "200" {
+					logger.Zaplog.Error("Webhook return fail code", zap.String("error", err.Error()))
+				}
 				logger.Zaplog.Error("Scenario execution failed", zap.String("Failed Job", jobConfig.ModuleName))
 				os.Exit(1)
 			}
 		}
 	}
-	logger.Zaplog.Info("Scenario execution finished succesfully")
+	logger.Zaplog.Info("Scenario execution finished successfully")
+	statusCode, err := webhook.SendWebHook("Scenario " + scenarioName + " completed succefuly", statusServerAddress)
+	if err != nil {
+		logger.Zaplog.Error("Webhook failed", zap.String("error", err.Error()))
+	}
+	if statusCode != "200" {
+		logger.Zaplog.Error("Webhook return fail code", zap.String("error", err.Error()))
+	}
 	os.Exit(0)
 }
