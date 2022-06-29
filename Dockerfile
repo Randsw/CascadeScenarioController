@@ -13,6 +13,7 @@ RUN go mod download
 COPY main.go main.go
 COPY logger/ logger/
 COPY cascadescenario/ cascadescenario/
+COPY webhook/ webhook/
 
 # Build
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o cascadescenariocontroller main.go

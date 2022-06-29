@@ -3,8 +3,9 @@ package cascadescenario
 import (
 	"os"
 
-	"github.com/randsw/cascadescenariocontroller/logger"
 	"encoding/json"
+
+	"github.com/randsw/cascadescenariocontroller/logger"
 
 	corev1 "k8s.io/api/core/v1"
 )
@@ -54,10 +55,12 @@ func ReadConfigJSON(filename string) []CascadeScenarios {
 	jsonFile, err := os.ReadFile(filename)
 	if err != nil {
 		logger.Zaplog.Error("Cant read config file")
+		os.Exit(1)
 	}
 	err = json.Unmarshal(jsonFile, &Config)
 	if err != nil {
 		logger.Zaplog.Error("YAML unmarshal failed")
+		os.Exit(1)
 	}
 	return Config.Cascademodules
 }

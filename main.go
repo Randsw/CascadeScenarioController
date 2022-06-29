@@ -138,9 +138,9 @@ func main() {
 	logger.InitLogger()
 
 	//Get Config from file mounted in tmp folder
-	//configFilename := "/tmp/configuration"
+	configFilename := "/tmp/configuration"
 
-	configFilename := "example_cm.yaml"
+	//configFilename := "example_cm.yaml"
 
 	CascadeScenatioConfig := scenarioconfig.ReadConfigJSON(configFilename)
 
@@ -190,7 +190,7 @@ func main() {
 				logger.Zaplog.Info("Job started ", zap.String("JobName", jobConfig.ModuleName))
 				start = false
 			} else if status == Succeeded { // Job finished succesfuly
-				statusCode, err := webhook.SendWebHook(jobConfig.ModuleName + " in scenario " + scenarioName + " finished successfully", statusServerAddress)
+				statusCode, err := webhook.SendWebHook("Module "+jobConfig.ModuleName+" in scenario " + scenarioName + " finished successfully", statusServerAddress)
 				if err != nil {
 					logger.Zaplog.Error("Webhook failed", zap.String("error", err.Error()))
 				}
@@ -204,7 +204,7 @@ func main() {
 				}
 				break
 			} else if status == Failed { // Job failed
-				statusCode, err := webhook.SendWebHook(jobConfig.ModuleName + " in scenario " + scenarioName + " failed", statusServerAddress)
+				statusCode, err := webhook.SendWebHook("Module "+jobConfig.ModuleName+" in scenario " + scenarioName + " failed", statusServerAddress)
 				if err != nil {
 					logger.Zaplog.Error("Webhook failed", zap.String("error", err.Error()))
 				}
@@ -217,7 +217,7 @@ func main() {
 		}
 	}
 	logger.Zaplog.Info("Scenario execution finished successfully")
-	statusCode, err := webhook.SendWebHook("Scenario " + scenarioName + " completed succefuly", statusServerAddress)
+	statusCode, err := webhook.SendWebHook("Scenario "+scenarioName+" completed succefuly", statusServerAddress)
 	if err != nil {
 		logger.Zaplog.Error("Webhook failed", zap.String("error", err.Error()))
 	}
