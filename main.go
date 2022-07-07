@@ -145,7 +145,7 @@ func main() {
 	CascadeScenatioConfig := scenarioconfig.ReadConfigJSON(configFilename)
 
 	//Connect to k8s api server
-	k8sApiClientset := connectToK8s()
+	k8sAPIClientset := connectToK8s()
 
 	//Get pod namespace
 	jobNamespace := "default"
@@ -177,11 +177,11 @@ func main() {
 		}
 		s3PackagePath.stageNum = i
 		//Start k8s job
-		launchK8sJob(k8sApiClientset, jobNamespace, &jobConfig, s3PackagePath)
+		launchK8sJob(k8sAPIClientset, jobNamespace, &jobConfig, s3PackagePath)
 		start := true
 		//Check for job status
 		for {
-			status, err := getJobStatus(k8sApiClientset, jobConfig.ModuleName, jobNamespace)
+			status, err := getJobStatus(k8sAPIClientset, jobConfig.ModuleName, jobNamespace)
 			if err != nil {
 				logger.Zaplog.Error("Get Job status fail", zap.String("JobName", jobConfig.ModuleName), zap.String("error", err.Error()))
 			}
@@ -198,7 +198,7 @@ func main() {
 					logger.Zaplog.Error("Webhook return fail code", zap.String("error", err.Error()))
 				}
 				// Delete finished Job
-				err = deleteSuccessJob(k8sApiClientset, jobConfig.ModuleName, jobNamespace)
+				err = deleteSuccessJob(k8sAPIClientset, jobConfig.ModuleName, jobNamespace)
 				if err != nil {
 					logger.Zaplog.Error("Failed to delete successfull job", zap.String("JobName", jobConfig.ModuleName), zap.String("error", err.Error()))
 				}
